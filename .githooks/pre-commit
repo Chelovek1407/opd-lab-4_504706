@@ -1,0 +1,30 @@
+#!/bin/sh
+
+# Получаем список файлов, которые добавляются в коммит
+files=$(git diff --cached --name-only --diff-filter=ACMR)
+
+for file in $files; do
+    # Проверка на запрещенные папки
+    if echo "$file" | grep -qE "^(Saved|Intermediate|Binaries|DerivedDataCache|\.vs)/"; then
+        echo "ERROR: Commit rejected. File '$file' is in a restricted directory."
+        exit 1
+    fi
+
+    # Проверка размера файла (если файл существует)
+    if [ -f "$file" ]; then
+        # Получаем размер в байтах (кроссплатформенно)
+        size=$(wc -c < "$file" | tr -d ' ')
+        
+        # Если размер больше 50 МБ (52428800 байт)
+        if [ "$size" -gt 52428800 ]; then
+            # Проверяем, отслеживается ли файл через LFS
+            filter_attr=$(git check-attr filter -- "$file" | awk -F': ' '{print $3}')
+            if [ "$filter_attr" != "lfs" ]; then
+                echo "ERROR: Commit rejected. File '$file' is larger than 50MB and not tracked by Git LFS."
+                exit 1
+            fi
+        fi
+    fi
+done
+
+exit 0
