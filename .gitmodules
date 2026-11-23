@@ -1,0 +1,3 @@
+[submodule "SharedAssets"]
+	path = SharedAssets
+	url = https://github.com/Chelovek1407/ue-shared-assets.git
